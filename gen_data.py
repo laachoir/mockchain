@@ -48,7 +48,7 @@ class Mockchain:
 	def record_transaction(self, transaction_author, transaction_recipient, coinbase=False):
 		if coinbase:
 			self.db.loc[len(self.db)] = [self.current_block_height, self.current_transaction_num, None, None, "__coinbase__", transaction_recipient.name]
-			self.graph.add_edge(self.current_transaction_num, "__coinbase__", block_height=self.current_block_height, real_input=True)
+			self.graph.add_edge(self.current_transaction_num, "__coinbase__", block_height=self.current_block_height, real_input=True, cluster="__coinbase__")
 			self.unconfirmed_blocks[0] += [(transaction_recipient, self.current_transaction_num)]
 			self.current_transaction_num += 1
 			return True
@@ -63,13 +63,13 @@ class Mockchain:
 			return False
 		real_input = np.random.choice(transaction_author.unspent_outputs)
 		ring = [real_input]
-		self.graph.add_edge(self.current_transaction_num, real_input, block_height=self.current_block_height, real_input=True)
+		self.graph.add_edge(self.current_transaction_num, real_input, block_height=self.current_block_height, real_input=True, cluster=transaction_author.name)
 		for _ in range(num_mixins):
 			fake_input = real_input  # workaround to help checking for duplicate fake inputs.
 			while fake_input in ring:
 				fake_input = np.random.randint(self.num_transactions_in_confirmed_blocks) #TODO allow different distributions, especially gamma.
 			ring += [fake_input]
-			self.graph.add_edge(self.current_transaction_num, fake_input, block_height=self.current_block_height, real_input=False)
+			self.graph.add_edge(self.current_transaction_num, fake_input, block_height=self.current_block_height, real_input=False, cluster=transaction_author.name)
 		ring = np.random.permutation(ring)
 		self.db.loc[len(self.db)] = [self.current_block_height, self.current_transaction_num, ring, real_input, transaction_author.name, transaction_recipient.name]
 		transaction_author.unspent_outputs.remove(real_input)
@@ -84,10 +84,12 @@ if __name__ == '__main__':
 	usernames=["Alice", "Bob", "Carol", "Dave", "Erin", "Frank", "Geraldine", "Harold"]
 
 	all_users = []
-	chain = Mockchain(minimum_ringsize=5, confirmations_needed=10)
+	chain = Mockchain(minimum_ringsize=5, confirmations_needed=5)
 	for i in range(num_participants):
 		# Only six usernames provided. Careful when setting a higher num_participants
-		all_users += [User(usernames[i], mining_power=np.random.random(), transaction_frequency=0.3)]
+		all_users += [User(usernames[i], mining_power=np.random.random(), transaction_frequency=0.2)]
+	stands_out = User("stands_out", mining_power=np.random.random(), transaction_frequency=0.2, usual_ringsize=50)
+	all_users += [stands_out]
 	for _ in range(num_total_blocks):
 		chain.mine_block(all_users)
 	chain.db.to_csv("gen_data.csv", sep='\t')
