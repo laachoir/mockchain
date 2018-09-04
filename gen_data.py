@@ -5,13 +5,23 @@ import matplotlib.pyplot as plt
 
 class User:
 	"""Capsules the transactions secret keys known to a certain user."""
-	def __init__(self, name, usual_ringsize=1, transaction_frequency=0.4, mining_power=0):
+	def __init__(self, name, usual_ringsize=1, transaction_frequency=0.4, mining_power=0, output_pick_strategy=None):
 		self.name = name
 		assert usual_ringsize > 0
 		self.usual_ringsize = usual_ringsize
 		self.transaction_frequency = transaction_frequency
 		self.mining_power = mining_power
+		self.output_pick_strategy = output_pick_strategy
 		self.unspent_outputs = []
+
+	def get_unspent_transaction(self):
+		assert len(self.unspent_outputs) > 0
+		# TODO create more realistic strategies
+		if self.output_pick_strategy == "young_first":
+			return sorted(self.unspent_outputs)[-1]
+		if self.output_pick_strategy == "old_first":
+			return sorted(self.unspent_outputs)[0]
+		return np.random.choice(self.unspent_outputs)
 
 
 class Mockchain:
@@ -61,7 +71,7 @@ class Mockchain:
 		# Check if there are enough mixins available to even create a big enough ring
 		if desired_ring_size > self.num_transactions_in_confirmed_blocks:
 			return False
-		real_input = np.random.choice(transaction_author.unspent_outputs)
+		real_input = transaction_author.get_unspent_transaction()
 		ring = [real_input]
 		self.graph.add_edge(self.current_transaction_num, real_input, block_height=self.current_block_height, real_input=True, cluster=transaction_author.name)
 		for _ in range(num_mixins):
@@ -87,7 +97,7 @@ if __name__ == '__main__':
 	chain = Mockchain(minimum_ringsize=5, confirmations_needed=5)
 	for i in range(num_participants):
 		# Only six usernames provided. Careful when setting a higher num_participants
-		all_users += [User(usernames[i], mining_power=np.random.random(), transaction_frequency=0.2)]
+		all_users += [User(usernames[i], mining_power=np.random.random(), transaction_frequency=0.2, output_pick_strategy="old_first")]
 	stands_out = User("stands_out", mining_power=np.random.random(), transaction_frequency=0.2, usual_ringsize=50)
 	all_users += [stands_out]
 	for _ in range(num_total_blocks):
