@@ -77,7 +77,9 @@ class Mockchain:
 		for _ in range(num_mixins):
 			fake_input = real_input  # workaround to help checking for duplicate fake inputs.
 			while fake_input in ring:
-				fake_input = np.random.randint(self.num_transactions_in_confirmed_blocks) #TODO allow different distributions, especially gamma.
+				# fake_input = np.random.gamma(19.28, 1/1.61) # TODO understand and implement the way gamma distribution works in Monero
+				# https://github.com/monero-project/monero/pull/3528/files
+				fake_input = np.random.randint(self.num_transactions_in_confirmed_blocks)
 			ring += [fake_input]
 			self.graph.add_edge(self.current_transaction_num, fake_input, block_height=self.current_block_height, real_input=False, cluster=transaction_author.name)
 		ring = np.random.permutation(ring)
@@ -88,22 +90,19 @@ class Mockchain:
 		return True
 
 if __name__ == '__main__':
-	num_participants = 8
-	num_total_blocks = 50
-
-	usernames=["Alice", "Bob", "Carol", "Dave", "Erin", "Frank", "Geraldine", "Harold"]
+	num_participants = 20
+	num_total_blocks = 200
 
 	all_users = []
 	chain = Mockchain(minimum_ringsize=5, confirmations_needed=5)
 	for i in range(num_participants):
-		# Only six usernames provided. Careful when setting a higher num_participants
-		all_users += [User(usernames[i], mining_power=np.random.random(), transaction_frequency=0.2, output_pick_strategy="old_first")]
+		all_users += [User("user_" + str(i), mining_power=np.random.random(), transaction_frequency=0.2, output_pick_strategy="old_first")]
 	stands_out = User("stands_out", mining_power=np.random.random(), transaction_frequency=0.2, usual_ringsize=50)
-	all_users += [stands_out]
+	#all_users += [stands_out]
 	for _ in range(num_total_blocks):
 		chain.mine_block(all_users)
 	chain.db.to_csv("gen_data.csv", sep='\t')
-	nx.draw_networkx(chain.graph, pos=nx.drawing.layout.shell_layout(chain.graph), arrows=True, with_labels=True)
-	plt.show()
+	#nx.draw_networkx(chain.graph, pos=nx.drawing.layout.shell_layout(chain.graph), arrows=True, with_labels=True)
+	#plt.show()
 	#plt.savefig("gen_data.png", bbox_inches='tight', dpi=300)
 	# nx.write_graphml(chain.graph, "gen_data.graphml")
