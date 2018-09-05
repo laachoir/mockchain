@@ -89,6 +89,21 @@ class Mockchain:
 		self.current_transaction_num += 1
 		return True
 
+def create_mockchain(users, num_blocks=200, minimum_ringsize=5, confirmations_needed=5):
+	chain = Mockchain(minimum_ringsize=minimum_ringsize, confirmations_needed=confirmations_needed)
+	for _ in range(num_blocks):
+		chain.mine_block(users)
+	return chain
+
+def get_mockchain_db(chain):
+	if chain != None:
+		return chain.db
+
+def get_mockchain_graph(chain):
+	if chain != None:
+		return chain.graph
+
+# Test use only
 if __name__ == '__main__':
 	num_participants = 20
 	num_total_blocks = 200
@@ -101,8 +116,8 @@ if __name__ == '__main__':
 	#all_users += [stands_out]
 	for _ in range(num_total_blocks):
 		chain.mine_block(all_users)
-	chain.db.to_csv("gen_data.csv", sep='\t')
+	chain.db.to_csv("mockchain.csv", sep='\t')
 	#nx.draw_networkx(chain.graph, pos=nx.drawing.layout.shell_layout(chain.graph), arrows=True, with_labels=True)
 	#plt.show()
 	#plt.savefig("gen_data.png", bbox_inches='tight', dpi=300)
-	# nx.write_graphml(chain.graph, "gen_data.graphml")
+	#nx.write_graphml(chain.graph, "gen_data.graphml")

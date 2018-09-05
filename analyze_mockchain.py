@@ -1,15 +1,32 @@
+import mockchain
+import numpy as np
 import pandas as pd
 from keras.models import Sequential
 from keras.layers import Dense
 
 # parameters
 ring_size = 5
-with open("gen_data.csv") as data_input:
-	data = pd.read_csv(data_input, sep='\t', index_col=0)
-	print(data[:30])
+num_conf_needed = 5
+num_users = 20
+num_blocks = 200
 
-# parse csv_file
-print(data[2]) # TODO this breaks for some reason. Understand better how DataFrames work
+# generate mockchain
+users = []
+for i in range(num_users):
+	users += [mockchain.User("user_" + str(i), mining_power=np.random.random(), transaction_frequency=0.2, output_pick_strategy="old_first")]
+chain = mockchain.create_mockchain(users, num_blocks=num_blocks, minimum_ringsize=ring_size, confirmations_needed=num_conf_needed)
+data = mockchain.get_mockchain_db(chain)
+
+# pick relevant data points
+x_train = []
+y_train = []
+# TODO I don't yet understand how to access DataFrames in the way I want.
+for i in range(len(data)):
+	if not data.loc[i][3] == None:
+		x_train += [data.loc[i][2]]
+		y_train += [data.loc[i][3]]
+print(y_train)
+
 
 # train model
 model = Sequential()
