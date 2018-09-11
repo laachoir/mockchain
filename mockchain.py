@@ -91,7 +91,9 @@ class Mockchain:
 
 def create_mockchain(users, num_blocks=200, minimum_ringsize=5, confirmations_needed=5):
 	chain = Mockchain(minimum_ringsize=minimum_ringsize, confirmations_needed=confirmations_needed)
-	for _ in range(num_blocks):
+	for i in range(num_blocks):
+		if i % 100 == 0:
+			print("Chain creation progress: %5i/%i" % (i, num_blocks), end="\r")
 		chain.mine_block(users)
 	return chain
 
